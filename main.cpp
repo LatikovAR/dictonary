@@ -1,55 +1,51 @@
-#include <stdio.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <string.h>
-#include <math.h>
 #include "hash_string.h"
+#include <time.h>
 
-int HAYSTACK_LEN = 1000;
-
-int read_part_of_file(FILE* f, char* s, int haystack_len, int needle_len);
+int MAX_NEEDLE_LEN = 200;
 
 int main() {
     char filename[200];
     FILE* f;
-    char needle[500];
-    char* haystack;
-    int n;
+    char** needle;
+    int* n_words_in_text;
+    struct hashtable* hash_t;
+    int n, i;
+    long int start_time;
 
     printf("Filename: ");
     scanf("%s", filename);
+
+    printf("Input num of words: ");
+    scanf("%d", &n);
+
+    needle = (char**) calloc((unsigned long long) n, sizeof (char*));
+    for(i = 0; i < n; i++) {
+        needle[i] = (char*) calloc(500, sizeof (char));
+    }
+    printf("Input words (each in new line):\n");
+    for(i = 0; i < n; i++) {
+        scanf("%s", needle[i]);
+    }
+
+    start_time = clock();
     f = fopen(filename, "r");
     assert(f != NULL);
-
-    printf("Search word: ");
-    scanf("%s", needle);
-
-    haystack = (char*) calloc((unsigned long long) (HAYSTACK_LEN), sizeof (char));
-    n = 0;
-    while(read_part_of_file(f, haystack, HAYSTACK_LEN, strlen(needle)) != 0) {
-        n += rabin_karp_counter(needle, haystack);
-    }
-    free(haystack);
-
-    printf("Number of words: %d", n);
+    hash_t = hash_file(f, MAX_NEEDLE_LEN);
     fclose(f);
-    return 0;
-}
 
-int read_part_of_file(FILE* f, char* s, int haystack_len, int needle_len) {
-    int i;
-    int c;
-    assert(s != NULL);
-    for(i = 0; i < (haystack_len - 1); i++) {
-        c = getc(f);
-        if(c == EOF) {
-            s[i] = '\0';
-            return i;
-        }
-        s[i] = (char) c;
+    n_words_in_text = (int*) calloc((unsigned long long) n, sizeof (int));
+    for(i = 0; i < n; i++) {
+        n_words_in_text[i] = rabin_karp_counter(hash_t, needle[i]);
     }
-    s[haystack_len - 1] = '\0';
-    fseek(f, 1 - (int) needle_len, SEEK_CUR);
-    return (haystack_len - 1);
+
+    printf("\nNumber of words:\n");
+    for(i = 0; i < n; i++) {
+        printf("%s: %d\n", needle[i], n_words_in_text[i]);
+    }
+    free(n_words_in_text);
+    free(needle);
+
+    free_hashtable(hash_t, MAX_NEEDLE_LEN);
+    printf("\nTime: %ld", clock() - start_time);
+    return 0;
 }
