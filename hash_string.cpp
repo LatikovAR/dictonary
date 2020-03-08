@@ -20,9 +20,9 @@ struct hashtable_cer_w_len {
 // Хеш-таблица на слова конкретной длины содержит эту самую длину
 // и наборы коллизий на каждый хеш, записанные при помощи односвязных списков (struct sl_list).
 
-int get_hash(const char *str, int str_len);
-int check_str(struct hashtable* hash_t, const char* needle, long long str_position);
-struct hashtable* make_hash_t(char* text, const int max_needle_len);
+static int get_hash(const char *str, int str_len);
+static int check_str(struct hashtable* hash_t, const char* needle, long long str_position);
+static struct hashtable* make_hash_t(char* text, const int max_needle_len);
 
 struct hashtable* hash_str(char* text, const int max_needle_len) {
     struct hashtable* hash_t;

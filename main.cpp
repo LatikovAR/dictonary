@@ -3,7 +3,7 @@
 
 int MAX_NEEDLE_LEN = 200;
 
-char* read_file(char* filename);
+static char* read_file(char* filename);
 
 int main() {
     char filename[200];
