@@ -3,9 +3,11 @@
 
 int MAX_NEEDLE_LEN = 200;
 
+char* read_file(char* filename);
+
 int main() {
     char filename[200];
-    FILE* f;
+    char* text;
     char** needle;
     int* n_words_in_text;
     struct hashtable* hash_t;
@@ -28,10 +30,8 @@ int main() {
     }
 
     start_time = clock();
-    f = fopen(filename, "r");
-    assert(f != NULL);
-    hash_t = hash_file(f, MAX_NEEDLE_LEN);
-    fclose(f);
+    text = read_file(filename);
+    hash_t = hash_str(text, MAX_NEEDLE_LEN);
 
     n_words_in_text = (int*) calloc((unsigned long long) n, sizeof (int));
     for(i = 0; i < n; i++) {
@@ -48,4 +48,38 @@ int main() {
     free_hashtable(hash_t, MAX_NEEDLE_LEN);
     printf("\nTime: %ld", clock() - start_time);
     return 0;
+}
+
+char* read_file(char* filename) {
+    char *str, *str_copy;
+    FILE* f;
+    unsigned long long str_len, max_str_len, inc_str_len = 10000;
+    int c;
+    assert(filename != nullptr);
+
+    f = fopen(filename, "r");
+    assert(f != nullptr);
+    str = (char*) calloc(inc_str_len, sizeof(char));
+    assert(str != nullptr);
+    str_len = 0;
+    max_str_len = inc_str_len;
+
+    while((c = getc(f)) != EOF) {
+        str[str_len] = (char) c;
+        str_len++;
+        if(str_len == max_str_len) {
+            max_str_len += inc_str_len;
+            str_copy = (char*) realloc(str, max_str_len);
+            assert(str_copy != nullptr);
+            str = str_copy;
+        }
+    }
+    str[str_len] = '\0';
+    str_len++;
+    str_copy = (char*) realloc(str, str_len);
+    assert(str_copy != nullptr);
+    str = str_copy;
+
+    fclose(f);
+    return str;
 }

@@ -7,7 +7,7 @@ int Q = 977;
 struct hashtable {
     struct hashtable_cer_w_len* hash_w_len;
     char* str;
-    int str_len;
+    unsigned long long str_len;
 };
 
 struct hashtable_cer_w_len {
@@ -15,81 +15,49 @@ struct hashtable_cer_w_len {
     int str_len;
 };
 
+// В struct hashtable содержится хешированная строка, ее длина и общая хеш-таблица.
+// Общая хеш-таблица состоит из набора хеш-таблиц (struct hashtable_cer_w_len) для всевозможных заданных длин искомой строки.
+// Хеш-таблица на слова конкретной длины содержит эту самую длину
+// и наборы коллизий на каждый хеш, записанные при помощи односвязных списков (struct sl_list).
+
 int get_hash(const char *str, int str_len);
-int check_str(struct hashtable* hash_t, const char* needle, int str_position);
+int check_str(struct hashtable* hash_t, const char* needle, long long str_position);
+struct hashtable* make_hash_t(char* text, const int max_needle_len);
 
-struct hashtable* hash_file(FILE* f, int max_str_len) {
+struct hashtable* hash_str(char* text, const int max_needle_len) {
     struct hashtable* hash_t;
-    int i, j, c;
+    unsigned long long i, j;
     int* buff;
-    char* str_p;
+    assert(text != nullptr);
+    assert(max_needle_len > 0);
 
-    assert(f != nullptr);
-    assert(max_str_len > 0);
+    hash_t = make_hash_t(text, max_needle_len);
 
-    hash_t = (struct hashtable*) calloc(1, sizeof (struct hashtable));
-    hash_t->hash_w_len = (struct hashtable_cer_w_len*) calloc((unsigned long long) max_str_len, sizeof (struct hashtable_cer_w_len));
-    assert(hash_t != NULL);
-    for(i = 0; i < max_str_len; i++) {
-        hash_t->hash_w_len[i].str_len = i + 1;
-        hash_t->hash_w_len[i].list = (struct sl_list**) calloc((unsigned long long) Q, sizeof (struct sl_list*));
-        assert(hash_t->hash_w_len[i].list != nullptr);
-        for(j = 0; j < Q; j++) {
-            hash_t->hash_w_len[i].list[j] = nullptr;
-        }
-    }
-
-    buff = (int*) calloc((unsigned long long) max_str_len, sizeof (int));
+    buff = (int*) calloc((unsigned long long) max_needle_len, sizeof (int));
     assert(buff != nullptr);
-    hash_t->str_len = 10000;
-    hash_t->str = (char*) calloc((size_t) hash_t->str_len, sizeof (char));
-    assert(hash_t->str != nullptr);
     i = 0;
-    while((c = getc(f)) != EOF) {
-        if(i >= hash_t->str_len) {
-            hash_t->str_len += 10000;
-            str_p = (char*) realloc(hash_t->str, (size_t) hash_t->str_len);
-            assert(str_p != nullptr);
-            hash_t->str = str_p;
-        }
-        hash_t->str[i] = (char) c;
-
-
+    while(i < hash_t->str_len) {
         j = i;
-        if(j > (max_str_len - 1)) {
-            j = max_str_len - 1;
+        if(j > (unsigned long long) (max_needle_len - 1)) {
+            j = (unsigned long long) (max_needle_len - 1);
         }
         while(j > 0) {
-            buff[j] = (buff[j - 1] * P + c) % Q;
+            buff[j] = (buff[j - 1] * P + hash_t->str[i]) % Q;
             add_list(hash_t->hash_w_len[j].list, buff[j], i - j);
             j--;
         }
-        buff[0] = c % Q;
+        buff[0] = hash_t->str[i] % Q;
         add_list(hash_t->hash_w_len[0].list, buff[0], i);
         i++;
     }
     free(buff);
 
-    if(i >= hash_t->str_len) {
-        hash_t->str_len += 10000;
-        str_p = (char*) realloc(hash_t->str, (size_t) hash_t->str_len);
-        assert(str_p != nullptr);
-        hash_t->str = str_p;
-    }
-    hash_t->str[i] = '\0';
-    i++;
-
-    str_p = (char*) realloc(hash_t->str, (size_t) i);
-    assert(str_p != nullptr);
-    hash_t->str = str_p;
-    hash_t->str_len = i;
-    //printf("%p ", hash_t[0].list[((int) 'a') % Q]);
-
     return hash_t;
 }
 
 int rabin_karp_counter(struct hashtable* hash_t, const char *needle) {
-    int counter, needle_len, needle_hash, check_pos;
+    int counter, needle_len, needle_hash;
+    long long check_pos;
     assert(needle != NULL);
 
     needle_len = (int) strlen(needle);
@@ -120,7 +88,7 @@ int get_hash(const char *str, int str_len) {
     return hash;
 }
 
-int check_str(struct hashtable* hash_t, const char* needle, int str_position) {
+int check_str(struct hashtable* hash_t, const char* needle, long long str_position) {
     int needle_len, i;
     assert(hash_t != nullptr);
     assert(needle != nullptr);
@@ -135,6 +103,28 @@ int check_str(struct hashtable* hash_t, const char* needle, int str_position) {
     }
     //printf("%d ", f_position);
     return 1;
+}
+
+struct hashtable* make_hash_t(char* text, const int max_needle_len) {
+    int i, j;
+    struct hashtable* hash_t;
+    assert(text != nullptr);
+
+    hash_t = (struct hashtable*) calloc(1, sizeof (struct hashtable));
+    hash_t->hash_w_len = (struct hashtable_cer_w_len*) calloc((unsigned long long) max_needle_len, sizeof (struct hashtable_cer_w_len));
+    assert(hash_t != NULL);
+    hash_t->str = text;
+    hash_t->str_len = strlen(hash_t->str);
+    for(i = 0; i < max_needle_len; i++) {
+        hash_t->hash_w_len[i].str_len = i + 1;
+        hash_t->hash_w_len[i].list = (struct sl_list**) calloc((unsigned long long) Q, sizeof (struct sl_list*));
+        assert(hash_t->hash_w_len[i].list != nullptr);
+        for(j = 0; j < Q; j++) {
+            hash_t->hash_w_len[i].list[j] = nullptr;
+        }
+    }
+
+    return hash_t;
 }
 
 void free_hashtable(struct hashtable* hash_t, int max_word_len) {

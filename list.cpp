@@ -3,10 +3,10 @@
 
 struct sl_list {
     struct sl_list* next;
-    int data;
+    unsigned long long data;
 };
 
-void add_list(struct sl_list** list_arr, int hash, int position) {
+void add_list(struct sl_list** list_arr, int hash, unsigned long long position) {
     struct sl_list* last_list;
     assert(list_arr != nullptr);
 
@@ -28,16 +28,16 @@ void add_list(struct sl_list** list_arr, int hash, int position) {
     }
 }
 
-int read_list(struct sl_list* list) {
+long long read_list(struct sl_list* list) {
     static struct sl_list* prev_list;
-    int data;
+    unsigned long long data;
     if(list != nullptr) {
         prev_list = list;
     }
     if(prev_list != nullptr) {
         data = prev_list->data;
         prev_list = prev_list->next;
-        return data;
+        return (long long) data;
     }
     return -1;
 }
